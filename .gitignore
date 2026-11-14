@@ -1,0 +1,9 @@
+# raw data (download separately; see fire_experiment/README.md)
+2006_2025/
+data/
+*.zip
+# generated
+fire_experiment/cache/
+*.pkl
+__pycache__/
+.venv/
