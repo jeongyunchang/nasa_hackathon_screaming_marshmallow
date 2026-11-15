@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wildfire Monitor</title>
+  <link rel="stylesheet" href="prototype-styles.css?v=20261115-1545">
+  <link rel="stylesheet" href="app.css?v=20261115-1545">
+</head>
+<body class="theme-dawn">
+<div class="app-shell">
+  <header class="site-nav">
+    <a class="site-brand" href="#/title">Wild Fire Monitor</a>
+    <nav class="site-links steps" id="steps">
+      <a href="#/title" data-s="title">1 Search</a>
+      <a href="#/region" data-s="region">2 Select area</a>
+      <a href="#/dashboard" data-s="dashboard">3 Graphs &amp; calendar</a>
+      <a href="#/activity" data-s="activity">4 Burning activity</a>
+      <button class="btn small" id="downloadBtn" title="Download daily FRP for the selected area as CSV">Download</button>
+    </nav>
+  </header>
+
+  <!-- 1. Title & search -->
+  <main id="s-title" class="view">
+    <section class="screen hero">
+      <div class="hero-copy">
+        <div class="eyebrow">Explore historical fire data</div>
+        <h1>Wildfire<br>Monitor<span style="color:var(--fire)">.</span></h1>
+        <p class="subtitle">Discover Historical Burning Activities Around the World</p>
+        <p class="footer-note hero-note">500 m integrated FRP observations · 2006 – <span class="js-last">2026</span> · Fire data currently available for California, USA</p>
+      </div>
+      <div class="hero-art">
+        <div class="globe"></div>
+        <div class="search-demo">
+          <h2>Select Region</h2>
+          <form class="search-box" id="searchForm" autocomplete="off">
+            <span aria-hidden="true">&#8981;</span>
+            <input id="searchInput" placeholder="Search a country, state, county or city" aria-label="Search region">
+            <button class="btn" type="submit">Search</button>
+          </form>
+          <div class="search-results" id="searchResults"></div>
+          <div class="load-status" id="loadStatus"><span class="spin"></span>Loading observation data…</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 2. Region selection -->
+  <main id="s-region" class="view">
+    <section class="screen">
+      <div class="eyebrow" id="regionCrumb">FIRMS data / Region selection</div>
+      <h1 id="regionTitle">Select a region in California</h1>
+      <p class="subtitle" id="regionSub">Drag on the map to draw a rectangle, enter two coordinate points, or upload a GeoJSON file.</p>
+      <div class="region-grid">
+        <div class="card map-card" id="regionMapBox">
+          <canvas id="regionCanvas" class="map-canvas"></canvas>
+          <div class="map-top"><div class="label" style="color:var(--ink)" id="regionMapLabel">California</div><p class="footer-note" id="regionHint">Drag to select · Scroll or +/− to zoom · Shift+drag to pan</p></div>
+          <div class="chip map-status" id="regionStatus">NO AREA SELECTED</div>
+          <div class="zoom" id="zoomBox"><button id="zoomIn" aria-label="Zoom in">+</button><button id="zoomOut" aria-label="Zoom out">&minus;</button><button id="zoomReset" aria-label="Reset view" title="Reset view">&#8634;</button></div>
+          <div class="map-legend" id="regionLegend"><span><i class="legend-swatch"></i>Selected area</span><span><i class="legend-line"></i>State / county boundary</span><span><i class="legend-dens"></i>Observed fire pixels 2006–2026</span></div>
+          <div class="nodata-banner card" id="noDataBanner" hidden></div>
+        </div>
+        <div class="card method-card" id="methodCard">
+          <h2>Choose your area</h2>
+          <p>Use one method to define the area. The most recent selection is used.</p>
+          <div class="line"></div>
+          <div class="section-title">01 &nbsp; DRAG ON THE MAP</div>
+          <p>Press and drag on the map to draw a rectangle.</p>
+          <div class="btn-row"><button class="btn secondary small" id="clearSel">Clear selection</button><button class="btn secondary small" id="usePlace">Use whole area</button></div>
+          <div class="line"></div>
+          <div class="section-title">02 &nbsp; ENTER TWO CORNERS</div>
+          <p>Opposite corners define a latitude/longitude rectangle.</p>
+          <div class="coordinate-grid">
+            <div><div class="point-title">POINT A &middot; NORTHWEST</div><div class="fields"><label>Latitude<input id="latA" inputmode="decimal"></label><label>Longitude<input id="lonA" inputmode="decimal"></label></div></div>
+            <div><div class="point-title">POINT B &middot; SOUTHEAST</div><div class="fields"><label>Latitude<input id="latB" inputmode="decimal"></label><label>Longitude<input id="lonB" inputmode="decimal"></label></div></div>
+          </div>
+          <div class="btn-row"><button class="btn secondary small" id="applyCoords">Apply coordinates</button><span class="footer-note" id="coordMsg">Decimal degrees · California only</span></div>
+          <div class="line"></div>
+          <div class="section-title">03 &nbsp; UPLOAD GEOJSON</div>
+          <label class="upload" id="dropZone"><span>&uarr;</span> Drop a .geojson file here or browse files<input type="file" id="geoFile" accept=".geojson,.json,application/geo+json" hidden></label>
+          <p class="footer-note" id="geoMsg"></p>
+          <div class="line"></div>
+          <div class="sel-stats" id="selStats"></div>
+        </div>
+      </div>
+      <div class="region-bottom"><span class="footer-note" id="regionFoot">Select an area to continue.</span><button class="btn" id="toDashboard" disabled>Continue to graphs &rarr;</button></div>
+    </section>
+  </main>
+
+  <!-- 3. Dashboard -->
+  <main id="s-dashboard" class="view">
+    <section class="screen">
+      <div class="eyebrow" id="dashCrumb">California / FIRMS data</div>
+      <h1 id="dashTitle">Selected area</h1>
+      <p class="subtitle" id="dashSub"></p>
+      <div class="dashboard-grid">
+        <aside class="dash-side">
+          <div class="card dashboard-map" id="dashMapBox"><div class="label" id="dashMapLabel">California</div><canvas id="dashCanvas" class="map-canvas"></canvas></div>
+          <div class="card side-stats" id="sideStats"></div>
+          <button class="btn secondary small wide" onclick="location.hash='#/region'">&larr; Change area</button>
+        </aside>
+        <div class="dashboard-main">
+          <section>
+            <div class="graph-head"><h2>Graphs</h2><div class="chips" id="metricChips"></div></div>
+            <div class="period-legend" id="periodLegend"></div>
+            <div id="weekly"></div>
+          </section>
+          <section id="calendarSec">
+            <div class="calendar-head"><h2>Calendar</h2><div class="cal-ctrl"><label class="label" for="dateInput">Date</label><input type="date" id="dateInput" class="select"><button class="btn small" id="goActivity">Go See Burning Activity</button></div></div>
+            <p class="metric-desc">Each day is coloured by the <b>mean FRP of the fire pixels observed in the selected area</b> that day. Days without an FRP measurement count as 0. Click any day to change the date.</p>
+            <div class="calendar-grid">
+              <div class="card heat-card"><div class="heat-title">+/- 7 days</div><div id="calWeek"></div></div>
+              <div class="card heat-card"><div class="heat-title">+/- 1 month</div><div id="calMonth"></div></div>
+              <div class="card heat-card year"><div class="heat-title" id="calYearTitle">Year</div><div id="calYear"></div></div>
+            </div>
+            <div class="cal-legend" id="calLegend"></div>
+          </section>
+          <section>
+            <div class="graph-head"><h2>Supporting data</h2><span class="label">Selected area</span></div>
+            <div class="card sub-card"><div class="chart-title">Missing calibrated FRP by year<small>Share of pixel-dates without integrated_modis_equiv_index_mw · not filled with 0</small></div><div id="missChart"></div></div>
+            <div class="card sub-card"><div class="chart-title">Detected events per year (by start year)<span class="mini-legend" id="countLegend"></span></div><div id="countChart"></div><p class="note" id="countNote"></p></div>
+            <details class="card sub-card"><summary class="chart-title">Methods &amp; limitations<small>Expand</small></summary><div id="notesBody" class="notes"></div></details>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 4. Burning activity -->
+  <main id="s-activity" class="view">
+    <section class="screen">
+      <div class="activity-title"><div class="eyebrow" id="actCrumb">California / Fire Radiative Power</div><h1>15 day Burning Activity</h1><p class="subtitle" id="actSub"></p></div>
+      <div class="activity-controls">
+        <button class="btn secondary small" id="prevBtn">&larr; Previous</button>
+        <button class="btn small" id="playBtn">Play</button>
+        <button class="btn secondary small" id="nextBtn">Next &rarr;</button>
+        <span class="spacer"></span>
+        <div class="chips" id="extentChips"></div>
+        <button class="btn small" onclick="location.hash='#/dashboard'">Back to Calendar</button>
+      </div>
+      <div class="activity-layout">
+        <div class="card activity-map" id="actMapBox">
+          <canvas id="actCanvas" class="map-canvas"></canvas>
+          <div class="label map-pill" id="mapDate"></div>
+          <div class="map-legend"><span><i class="legend-swatch"></i>Fire pixel (500 m)</span><span><i class="legend-missing"></i>No calibrated value</span><span><i class="legend-sel"></i>Selected area</span></div>
+        </div>
+        <div class="frp"><div>
+          <div class="label" style="margin-bottom:14px">FRP<br><small class="unit">MW · pixel-date mean</small></div>
+          <div style="display:flex;gap:10px"><div class="frp-scale"></div><div class="frp-labels" id="frpLabels"></div></div>
+          <p class="footer-note frp-note">Colour range and map extent stay fixed for all 15 days (log scale). Pixels outside the selected area are faded.</p>
+        </div></div>
+      </div>
+      <div class="timeline">
+        <input type="range" id="daySlider" min="0" max="14" value="7" aria-label="Day">
+        <div class="timeline-labels"><span id="tlStart"></span><span id="tlMid"></span><span id="tlEnd"></span></div>
+      </div>
+      <div class="card mini-card">
+        <div class="graph-head"><h2 id="miniTitle"></h2><div class="mini-legend"><span><i class="sw-line"></i><b id="miniYear"></b></span><span><i class="sw-med"></i>Normal median</span><span><i class="sw-band"></i>10–90th percentile</span></div></div>
+        <div id="miniChart"></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+<div class="busy" id="busy"><div class="card"><span class="spin"></span><span id="busyMsg">Working…</span></div></div>
+<script src="data/geo.js"></script>
+<script src="app.js?v=20261115-1545"></script>
+</body>
+</html>
