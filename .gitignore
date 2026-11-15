@@ -10,4 +10,3 @@ __pycache__/
 
 # wildfire monitor site data must be committed
 !wildfire_monitor/site/data/
-wildfire_monitor/source_data/

@@ -17,14 +17,14 @@ Screens:
 | Path | Contents |
 |---|---|
 | `site/` | The website (HTML/CSS/JS). `site/data/core.js` and `site/data/geo.js` are generated. |
-| `source_data/` | Not included in the repository. Place `california_500m_2006_2026_with_event_id_and_size.csv` (6,009,425 rows, 756 MB) here to rebuild the data. |
+| `source_data/california_500m_2006_2026_with_event_id_and_size.csv` | Source FRP observations (6,009,425 rows, 756 MB, stored with Git LFS). |
 | `preprocess/preprocess.py` | Builds `site/data/*.js` from the source CSV and the boundary files. |
 | `preprocess/*.json` | Boundary files: `states.json`, `counties.json` (us-atlas 3.0.1), `countries.json` (world-atlas 2.0.2). |
 
 ## Rebuild the data
 
 ```bash
-# put the source CSV in source_data/ first
+git lfs pull                      # fetch the source CSV
 pip install polars numpy
 python preprocess/preprocess.py   # writes site/data/core.js and site/data/geo.js
 ```
